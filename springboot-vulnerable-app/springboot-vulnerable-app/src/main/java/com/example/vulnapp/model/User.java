@@ -1,11 +1,19 @@
-
 package com.example.vulnapp.model;
 
-public class User {
+import org.springframework.security.crypto.bcrypt.BCrypt;
 
+public class User {
     private Long id;
     private String username;
-    private String password; // Plain-text password
+    private String passwordHash;
+
+    public User() {}
+
+    public User(Long id, String username, String password) {
+        this.id = id;
+        this.username = username;
+        setPassword(password);
+    }
 
     public Long getId() {
         return id;
@@ -23,11 +31,15 @@ public class User {
         this.username = username;
     }
 
-    public String getPassword() {
-        return password;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
     public void setPassword(String password) {
-        this.password = password;
+        this.passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
+    }
+
+    public boolean checkPassword(String password) {
+        return BCrypt.checkpw(password, this.passwordHash);
     }
 }
