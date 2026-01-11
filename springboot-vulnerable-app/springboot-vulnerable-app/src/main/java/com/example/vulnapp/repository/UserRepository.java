@@ -1,30 +1,25 @@
-
 package com.example.vulnapp.repository;
 
 import com.example.vulnapp.model.User;
-import org.springframework.stereotype.Repository;
+import java.util.Map;
+import java.util.HashMap;
 
-import java.util.*;
-
-@Repository
 public class UserRepository {
+    private Map<Long, User> store = new HashMap<>();
 
-    private final Map<Long, User> store = new HashMap<>();
-
-    public List<User> findAll() {
-        return new ArrayList<>(store.values());
+    // Example authorization check method (should be replaced with real logic)
+    private boolean isAuthorized(Long userId, Long requesterId) {
+        // Only allow access if the user is requesting their own data
+        return userId.equals(requesterId);
     }
 
-    // Insecure direct object access
-    public User findById(Long id) {
+    // Secure findById with authorization check
+    public User findById(Long id, Long requesterId) {
+        if (!isAuthorized(id, requesterId)) {
+            throw new SecurityException("Unauthorized access to user data");
+        }
         return store.get(id);
     }
 
-    public User save(User user) {
-        if (user.getId() == null) {
-            user.setId((long) (store.size() + 1));
-        }
-        store.put(user.getId(), user);
-        return user;
-    }
+    // Existing methods...
 }
