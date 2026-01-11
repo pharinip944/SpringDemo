@@ -1,34 +1,62 @@
 package com.example.vulnapp.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
+import javax.servlet.http.HttpServletRequest;
+import com.example.vulnapp.security.CSRFTokenManager;
 import com.example.vulnapp.model.User;
 import com.example.vulnapp.service.UserService;
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
 
 @RestController
-@RequestMapping("/users")
-@Validated
+@RequestMapping("/user")
 public class UserController {
     @Autowired
     private UserService userService;
 
-    @GetMapping("/csrf-token")
-    public CsrfToken csrfToken(HttpServletRequest request) {
-        return (CsrfToken) request.getAttribute(CsrfToken.class.getName());
-    }
+    @PostMapping("/update")
+    public String updateUser(HttpServletRequest request, @RequestBody User user) {
+        String sessionToken = CSRFTokenManager.getTokenFromSession(request);
+        String headerToken = request.getHeader("X-CSRF-TOKEN");
 
-    @PostMapping
-    public User createUser(@Valid @RequestBody User user, HttpServletRequest request) {
-        CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
-        if (csrfToken == null || !csrfToken.getToken().equals(request.getHeader("X-CSRF-TOKEN"))) {
-            throw new SecurityException("Invalid CSRF token");
+        if (sessionToken == null || headerToken == null || !CSRFTokenManager.isValidToken(sessionToken, headerToken)) {
+            throw new SecurityException("Invalid or missing CSRF token");
         }
-        return userService.createUser(user);
+
+        // Invalidate the CSRF token after use to prevent reuse
+        CSRFTokenManager.invalidateToken(request);
+
+        userService.updateUser(user);
+        return "User updated successfully.";
+    }
+}
+
+// CSRFTokenManager.java
+package com.example.vulnapp.security;
+
+import javax.servlet.http.HttpServletRequest;
+import java.security.MessageDigest;
+import java.util.Objects;
+
+public class CSRFTokenManager {
+    public static String getTokenFromSession(HttpServletRequest request) {
+        Object token = request.getSession().getAttribute("CSRF_TOKEN");
+        return token != null ? token.toString() : null;
     }
 
-    // Other endpoints ...
+    public static boolean isValidToken(String sessionToken, String headerToken) {
+        return constantTimeEquals(sessionToken, headerToken);
+    }
+
+    public static void invalidateToken(HttpServletRequest request) {
+        request.getSession().removeAttribute("CSRF_TOKEN");
+    }
+
+    private static boolean constantTimeEquals(String a, String b) {
+        if (a == null || b == null || a.length() != b.length()) return false;
+        int result = 0;
+        for (int i = 0; i < a.length(); i++) {
+            result |= a.charAt(i) ^ b.charAt(i);
+        }
+        return result == 0;
+    }
 }
