@@ -1,25 +1,39 @@
 package com.example.vulnapp.repository;
 
 import com.example.vulnapp.model.User;
-import java.util.Map;
+import org.springframework.stereotype.Repository;
 import java.util.HashMap;
+import java.util.Map;
 
+@Repository
 public class UserRepository {
-    private Map<Long, User> store = new HashMap<>();
+    private Map<Long, User> users = new HashMap<>();
 
-    // Example authorization check method (should be replaced with real logic)
     private boolean isAuthorized(Long userId, Long requesterId) {
-        // Only allow access if the user is requesting their own data
         return userId.equals(requesterId);
     }
 
-    // Secure findById with authorization check
-    public User findById(Long id, Long requesterId) {
-        if (!isAuthorized(id, requesterId)) {
-            throw new SecurityException("Unauthorized access to user data");
+    public User findById(Long userId, Long requesterId) {
+        if (!isAuthorized(userId, requesterId)) {
+            throw new SecurityException("Unauthorized access");
         }
-        return store.get(id);
+        return users.get(userId);
     }
 
-    // Existing methods...
+    public User save(Long requesterId, User user) {
+        if (!isAuthorized(user.getId(), requesterId)) {
+            throw new SecurityException("Unauthorized access");
+        }
+        users.put(user.getId(), user);
+        return user;
+    }
+
+    public void delete(Long userId, Long requesterId) {
+        if (!isAuthorized(userId, requesterId)) {
+            throw new SecurityException("Unauthorized access");
+        }
+        users.remove(userId);
+    }
+
+    // Add similar authorization checks to other repository methods as needed
 }
