@@ -1,40 +1,46 @@
 package com.example.vulnapp.model;
 
-import javax.persistence.*;
-import java.util.Set;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 
-@Entity
 public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String username;
     private String passwordHash;
-    @ElementCollection(fetch = FetchType.EAGER)
-    private Set<String> roles;
+
+    public User() {}
+
+    public User(Long id, String username, String plainPassword) {
+        this.id = id;
+        this.username = username;
+        setPassword(plainPassword);
+    }
 
     public Long getId() {
         return id;
     }
+
     public void setId(Long id) {
         this.id = id;
     }
+
     public String getUsername() {
         return username;
     }
+
     public void setUsername(String username) {
         this.username = username;
     }
+
     public String getPasswordHash() {
         return passwordHash;
     }
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
+
+    public void setPassword(String plainPassword) {
+        // Use BCrypt for strong hashing and automatic salting
+        this.passwordHash = BCrypt.hashpw(plainPassword, BCrypt.gensalt());
     }
-    public Set<String> getRoles() {
-        return roles;
-    }
-    public void setRoles(Set<String> roles) {
-        this.roles = roles;
+
+    public boolean checkPassword(String plainPassword) {
+        return BCrypt.checkpw(plainPassword, this.passwordHash);
     }
 }
